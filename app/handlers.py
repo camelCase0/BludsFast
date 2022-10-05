@@ -68,8 +68,14 @@ def user_login(user_form: UserLoginForm = Body(...), database=Depends(get_db)):
     return signJWT(user.id)
 
 
-@router.get('/user/{user_id}', tags=["user"], response_model=UserGetForm, dependencies=[Depends(JWTBearer())], name='user:get')
-def get_user(user_id: int, database=Depends(get_db)):
+@router.get('/user/{user_id}', tags=["user"], response_model=UserGetForm, name='user:get')
+def get_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer())):
+
+    user_id = decodeJWT(token)['user_id']
+    loged_user = database.query(User).filter(User.id == user_id).one_or_none()
+    if not loged_user.status == Status.A.name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
+
     user = database.query(User).filter(User.id == user_id).one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
@@ -90,7 +96,7 @@ def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
     return user
 
 
-@router.get('/users', tags=["user"], response_model=List[UserGetForm], name='user:get_all')#, dependencies=[Depends(JWTBearer())]
+@router.get('/users', tags=["user"], response_model=List[UserGetForm],dependencies=[Depends(JWTBearer())], name='user:get_all')#, dependencies=[Depends(JWTBearer())]
 def get_all_user(database=Depends(get_db)):
     users = crud.get_all_users(database)
     for user in users:
@@ -100,7 +106,7 @@ def get_all_user(database=Depends(get_db)):
 
 
 # D  O  N  A  T  I  O  N  S
-@router.get('/donations', tags=["donations"], response_model=List[DonationGetForm],  name='donate:get all')# dependencies=[Depends(JWTBearer())],
+@router.get('/donations', tags=["donations"], response_model=List[DonationGetForm],dependencies=[Depends(JWTBearer())], name='donate:get all')# dependencies=[Depends(JWTBearer())],
 def get_all_donation(database=Depends(get_db)):
 
     dons = database.query(Donations).order_by(Donations.date.desc()).all()
@@ -112,7 +118,7 @@ def get_all_donation(database=Depends(get_db)):
         don.blood_type = user.blood_type.value
     return dons
 
-@router.post('/donations', tags=["donations"],  name='donate:create') #dependencies=[Depends(JWTBearer())],
+@router.post('/donations', tags=["donations"],dependencies=[Depends(JWTBearer())], name='donate:create') #dependencies=[Depends(JWTBearer())],
 def create_donation(donate_form: DonationCreateForm = Body(...), database=Depends(get_db)):
     # btype = Blood_type[str(donate_form.blood_type)]
     record = database.query(Donations).filter(Donations.user_id == donate_form.user_id).order_by(Donations.date.desc()).first()
