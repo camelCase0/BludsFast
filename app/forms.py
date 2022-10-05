@@ -9,7 +9,6 @@ class UserLoginForm(BaseModel):
     email: str
     password: str
 
-
 class UserCreateForm(BaseModel):
     email: str
     password: str
@@ -17,6 +16,18 @@ class UserCreateForm(BaseModel):
     blood_type: Blood_type
     status: Status
 
+    class Config:
+        orm_mode = True
+
+class UserUpdateForm(BaseModel):
+    email: str
+    password: str
+    name: str
+    blood_type: Blood_type
+    status: Status
+
+    class Config:
+        orm_mode = True
 
 class DonationBase(BaseModel):
     volume: int

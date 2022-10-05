@@ -13,7 +13,7 @@ from app.utils import get_password_hash
 from app.auth.auth_bearer import JWTBearer
 from app.auth.auth_handler import signJWT, decodeJWT
 from .database import SessionLocal, engine
-
+from . import crud
 Base.metadata.create_all(bind=engine)
 
 router = APIRouter()
@@ -33,22 +33,31 @@ def get_db():
         db.close()
 
 
-@router.post("/register", tags=["user"], name='user:create')
-def create_user(user: UserCreateForm = Body(...), database: Session = Depends(get_db)):
-    exists_user = database.query(User.id).filter(User.email == user.email).one_or_none()
+@router.post("/register", tags=["user"], name='user:create')#dependencies=[Depends(JWTBearer())],
+def create_user(userform: UserCreateForm = Body(...), database: Session = Depends(get_db), token=Depends(JWTBearer())):
+    # loged_user = get_curent_user(database, token)
+    user_id = decodeJWT(token)['user_id']
+    loged_user = database.query(User).filter(User.id == user_id).one_or_none()
+
+    if not loged_user.status == Status.A.name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
+
+    exists_user = database.query(User.id).filter(User.email == userform.email).one_or_none()
     if exists_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
 
     new_user = User(
-        email=user.email,
-        password=get_password_hash(user.password),
-        name=user.name,
-        blood_type=user.blood_type.name,
-        status=user.status.name
+        email=userform.email,
+        password=get_password_hash(userform.password),
+        name=userform.name,
+        blood_type=userform.blood_type.name,
+        status=userform.status.name
     )
+
     database.add(new_user)
     database.commit()
-    return signJWT(new_user.id)
+
+    return status.HTTP_201_CREATED
 
 
 @router.post("/login", tags=["user"])
@@ -60,7 +69,7 @@ def user_login(user_form: UserLoginForm = Body(...), database=Depends(get_db)):
 
 
 @router.get('/user/{user_id}', tags=["user"], response_model=UserGetForm, dependencies=[Depends(JWTBearer())], name='user:get')
-def get_user(user_id:str, database=Depends(get_db)):
+def get_user(user_id: int, database=Depends(get_db)):
     user = database.query(User).filter(User.id == user_id).one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
@@ -74,14 +83,16 @@ def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
     user = database.query(User).filter(User.id == user_id).one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
+    print(user.status)
     user.status = Status[user.status]
+    print(user.status)
     user.blood_type = Blood_type[user.blood_type]
     return user
 
 
 @router.get('/users', tags=["user"], response_model=List[UserGetForm], name='user:get_all')#, dependencies=[Depends(JWTBearer())]
 def get_all_user(database=Depends(get_db)):
-    users = database.query(User).order_by(User.id).all()
+    users = crud.get_all_users(database)
     for user in users:
         user.status = Status[user.status]
         user.blood_type = Blood_type[user.blood_type]
@@ -102,7 +113,7 @@ def get_all_donation(database=Depends(get_db)):
     return dons
 
 @router.post('/donations', tags=["donations"],  name='donate:create') #dependencies=[Depends(JWTBearer())],
-def create_donation(donate_form: DonationCreateForm=Body(...), database=Depends(get_db)):
+def create_donation(donate_form: DonationCreateForm = Body(...), database=Depends(get_db)):
     # btype = Blood_type[str(donate_form.blood_type)]
     record = database.query(Donations).filter(Donations.user_id == donate_form.user_id).order_by(Donations.date.desc()).first()
     cur_date = datetime.now()

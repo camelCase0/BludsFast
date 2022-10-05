@@ -28,12 +28,12 @@ class Status(Enum):
 class User(Base):
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     email = Column(String)
     password = Column(String, nullable=False)
     name = Column(String)
-    blood_type = Column(String, default=Blood_type.Om.value)
-    status = Column(String, default=Status.D.value)
+    blood_type = Column(String, default=Blood_type.Om.name)
+    status = Column(String, default=Status.D.name)
     created_at = Column(DateTime, default=datetime.utcnow())
 
     donations = relationship("Donations", back_populates="user")
