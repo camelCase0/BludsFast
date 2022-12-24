@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Float
 from sqlalchemy.orm import Session, relationship
 
 from app.config import DATABASE_URL
@@ -33,6 +33,7 @@ class User(Base):
     password = Column(String, nullable=False)
     name = Column(String)
     blood_type = Column(String, default=Blood_type.Om.name)
+    volume = Column(Float, default=0)
     status = Column(String, default=Status.D.name)
     created_at = Column(DateTime, default=datetime.utcnow())
 

@@ -48,6 +48,15 @@ def update_user(database: Session, userform: UserUpdateForm, user_id: int):
     database.commit()
     return userform
 
+def update_user_volume(database: Session, don_volume: int, user_id: int):
+    old_user = database.query(User).filter(User.id == user_id)
+    volume = database.query(User).filter(User.id == user_id).one_or_none().volume + don_volume
+    old_user.update({
+        'volume': volume,
+    })
+    database.commit()
+    return {"new volume is ": volume}
+
 
 def delete_user_by_id(database: Session, user_id: int):
     user_to_dell = database.query(User).filter(User.id == user_id)

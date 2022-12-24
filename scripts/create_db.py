@@ -14,6 +14,7 @@ def main():
         password varchar(256),
         name varchar(256),
         blood_type varchar(256),
+        volume integer,
         status varchar(256),
         created_at varchar(256)
         );""")

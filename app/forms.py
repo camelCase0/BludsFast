@@ -30,7 +30,7 @@ class UserUpdateForm(BaseModel):
         orm_mode = True
 
 class DonationBase(BaseModel):
-    volume: int
+    volume: float
     date: datetime
 
     class Config:
@@ -41,8 +41,9 @@ class UserGetForm(BaseModel):
     email: str
     name: str
     blood_type: Blood_type
+    volume: float
     status: Status
-    donations: list[DonationBase] = []
+    donations: list[DonationBase]
 
     class Config:
         orm_mode = True
@@ -50,13 +51,13 @@ class UserGetForm(BaseModel):
 
 class DonationCreateForm(BaseModel):
     user_id: int
-    volume: int
+    volume: float
 
 
 class DonationGetForm(BaseModel):
     name: str
     blood_type: Blood_type
-    volume: int
+    volume: float
     date: datetime
 
     class Config:
