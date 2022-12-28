@@ -48,6 +48,16 @@ class UserGetForm(BaseModel):
     class Config:
         orm_mode = True
 
+class UserGetAForm(BaseModel):
+    id: int
+    email: str
+    name: str
+    status: Status
+    donors: list[UserGetForm]
+
+    class Config:
+        orm_mode = True
+
 
 class DonationCreateForm(BaseModel):
     user_id: int

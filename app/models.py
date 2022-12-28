@@ -22,7 +22,6 @@ class Blood_type(Enum):
 class Status(Enum):
     A = "Admin"
     D = "Donor"
-    R = "Recepient"
 
 
 class User(Base):
@@ -36,9 +35,9 @@ class User(Base):
     volume = Column(Float, default=0)
     status = Column(String, default=Status.D.name)
     created_at = Column(DateTime, default=datetime.utcnow())
+    admin_id = Column(Integer, nullable=False)
 
     donations = relationship("Donations", back_populates="user")
-    receives = relationship("Receives", back_populates="user")
 
 
 class Donations(Base):
@@ -47,19 +46,24 @@ class Donations(Base):
     record_id = Column(Integer, primary_key=True)
     volume = Column(Integer)
     date = Column(DateTime, default=datetime.utcnow())
+    
     user_id = Column(Integer, ForeignKey('users.id'))
-
     user = relationship("User", back_populates="donations")
+    
+    clinic_id = Column(Integer, ForeignKey('clinics.clinic_id'))
+    clinic = relationship("Clinics", back_populates="donations")
 
 
-class Receives(Base):
-    __tablename__ = 'receives'
+class Clinics(Base):
+    __tablename__ = 'clinics'
 
-    record_id = Column(Integer, primary_key=True)
-    volume = Column(Integer)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable = False)
+    clinic_id = Column(Integer, primary_key=True)
+    address = Column(String)
+    altitude = Column(Float)
+    longitude = Column(Float)
 
-    user = relationship("User", back_populates="receives")
+    donations = relationship("Donations", back_populates="clinic")
+
 #
 # class AuthToken(Base):
 #     __tablename__ = 'auth_token'
