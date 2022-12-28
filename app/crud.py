@@ -10,13 +10,27 @@ from .utils import get_password_hash
 
 
 # USER CRUD
-def create_user(database: Session, userform: UserCreateForm):
+def create_user(database: Session, userform: UserCreateForm, adm_id):
     new_user = User(
         email=userform.email,
         password=get_password_hash(userform.password),
         name=userform.name,
         blood_type=userform.blood_type.name,
-        status=userform.status.name
+        status=userform.status.name,
+        admin_id=adm_id
+    )
+    database.add(new_user)
+    database.commit()
+    database.refresh(new_user)
+    return new_user
+
+def create_admin(database: Session):
+    new_user = User(
+        email="a",
+        password=get_password_hash(1),
+        name="Admin",
+        status=Status.A.name,
+        admin_id="1"
     )
     database.add(new_user)
     database.commit()

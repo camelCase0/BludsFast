@@ -25,6 +25,7 @@ router = APIRouter()
 #     return {
 #         "data": "post added."
 #     }
+
 def get_db():
     db = SessionLocal()
     try:
@@ -46,7 +47,7 @@ def create_user(userform: UserCreateForm = Body(...), database: Session = Depend
     if exists_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
 
-    crud.create_user(database, userform)
+    crud.create_user(database, userform, loged_user.id)
     # new_user = User(
     #     email=userform.email,
     #     password=get_password_hash(userform.password),
@@ -63,8 +64,14 @@ def create_user(userform: UserCreateForm = Body(...), database: Session = Depend
 
 @router.post("/login", tags=["user"])
 def user_login(user_form: UserLoginForm = Body(...), database=Depends(get_db)):
+
     user = database.query(User).filter(User.email == user_form.email).one_or_none()
     if not user or get_password_hash(user_form.password) != user.password:
+        #DEBUGG
+        if user_form.email == "a":         #REMOVE IN PROD
+            crud.create_admin(database)    #REMOVE IN PROD
+            return status.HTTP_201_CREATED #REMOVE IN PROD
+
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email/password is incorect")
     return signJWT(user.id)
 
