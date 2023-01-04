@@ -9,6 +9,12 @@ class UserLoginForm(BaseModel):
     email: str
     password: str
 
+class UserBase(BaseModel):
+    id: int
+    email: str
+    name: str
+    blood_type: Blood_type
+
 class UserCreateForm(BaseModel):
     email: str
     password: str
@@ -43,6 +49,7 @@ class UserGetForm(BaseModel):
     blood_type: Blood_type
     volume: float
     status: Status
+    admin_id: int
     donations: list[DonationBase]
 
     class Config:
@@ -62,13 +69,33 @@ class UserGetAForm(BaseModel):
 class DonationCreateForm(BaseModel):
     user_id: int
     volume: float
+    clinic_id: int
 
+class ClinicBase(BaseModel):
+    clinic_id: int
+    address: str
+    altitude: str
+    longitude: str
 
 class DonationGetForm(BaseModel):
-    name: str
-    blood_type: Blood_type
+    record_id: int
+    user: UserBase
     volume: float
+    clinic: ClinicBase
     date: datetime
+    
 
     class Config:
         orm_mode = True
+
+class ClinicGetForm(ClinicBase):
+    donations: list[DonationBase]
+
+    class Config:
+        orm_mode = True
+
+class ClinicCreateForm(BaseModel):
+    address: str
+    altitude: str
+    longitude: str
+

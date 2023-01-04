@@ -4,8 +4,8 @@ from starlette import status
 
 from .auth.auth_bearer import JWTBearer
 from .auth.auth_handler import decodeJWT
-from .models import User, Status, Blood_type
-from .forms import UserCreateForm, UserUpdateForm
+from .models import User, Status, Blood_type, Clinics
+from .forms import UserCreateForm, UserUpdateForm, ClinicCreateForm
 from .utils import get_password_hash
 
 
@@ -77,3 +77,14 @@ def delete_user_by_id(database: Session, user_id: int):
     database.delete(user_to_dell)
     database.commit()
     return {'deleted user:': user_id}
+
+def create_clinic(database: Session, cform:ClinicCreateForm):
+    new_clinic = Clinics(
+        address= cform.address,
+        altitude= cform.altitude,
+        longitude= cform.longitude
+    )
+    database.add(new_clinic)
+    database.commit()
+    database.refresh(new_clinic)
+    return new_clinic

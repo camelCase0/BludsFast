@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Body, Depends, HTTPException
 from starlette import status
 
-from app.forms import UserLoginForm, UserCreateForm, UserGetForm, DonationCreateForm, DonationGetForm
-from app.models import User, Status, Donations, Blood_type, Base
+from app.forms import UserLoginForm, UserCreateForm, UserGetForm, DonationCreateForm, DonationGetForm, ClinicCreateForm
+from app.models import User, Status, Donations, Blood_type, Base, Clinics
 from app.utils import get_password_hash
 # from app.auth import check_auth_token
 
@@ -148,3 +148,11 @@ def create_donation(donate_form: DonationCreateForm = Body(...), database=Depend
     crud.update_user_volume(database, donate_form.volume, donate_form.user_id)
     
     return {'created_record':new_record.date, 'user_id':new_record.user_id}
+
+@router.post('clinic',tags=['clinic'],dependencies=[Depends(JWTBearer())], name="clinic:create")
+def create_clinic(clinic_form: ClinicCreateForm = Body(...), database=Depends(get_db)):
+    clinic = database.query(Clinics).filter(Clinics.address == clinic_form.address).one_or_none
+    if clinic:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Address already registered")
+    crud.create_clinic(database, clinic_form)
+    return status.HTTP_201_CREATED
