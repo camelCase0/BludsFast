@@ -4,7 +4,7 @@ from pydantic import BaseModel
 # from typing import Optional
 from .models import Status, Blood_type
 
-
+# USER
 class UserLoginForm(BaseModel):
     email: str
     password: str
@@ -88,8 +88,16 @@ class DonationGetForm(BaseModel):
     class Config:
         orm_mode = True
 
+class DonationBaseClinic(BaseModel):
+    user_id: int
+    volume: float
+    date: datetime
+
+    class Config:
+        orm_mode = True
+
 class ClinicGetForm(ClinicBase):
-    donations: list[DonationBase]
+    donations: list[DonationBaseClinic]
 
     class Config:
         orm_mode = True

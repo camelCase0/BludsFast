@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Body, Depends, HTTPException
 from starlette import status
 
-from app.forms import UserLoginForm, UserCreateForm, UserGetForm, DonationCreateForm, DonationGetForm, ClinicCreateForm
+from app.forms import UserLoginForm, UserCreateForm, UserGetForm, DonationCreateForm, DonationGetForm, ClinicCreateForm, ClinicGetForm
 from app.models import User, Status, Donations, Blood_type, Base, Clinics
 from app.utils import get_password_hash
 # from app.auth import check_auth_token
@@ -34,7 +34,7 @@ def get_db():
         db.close()
 
 
-@router.post("/register", tags=["user"], name='user:create')#dependencies=[Depends(JWTBearer())],
+@router.post("/register", tags=["user"], name='user:create', status_code=201)#dependencies=[Depends(JWTBearer())],
 def create_user(userform: UserCreateForm = Body(...), database: Session = Depends(get_db), token=Depends(JWTBearer())):
     loged_user = crud.get_user_by_token(database, token)
     #user_id = decodeJWT(token)['user_id']
@@ -75,6 +75,26 @@ def user_login(user_form: UserLoginForm = Body(...), database=Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email/password is incorect")
     return signJWT(user.id)
 
+@router.get('/users', tags=["user"], response_model=List[UserGetForm],dependencies=[Depends(JWTBearer())], name='user:get_all')#, dependencies=[Depends(JWTBearer())]
+def get_all_user(database=Depends(get_db)):
+    users = crud.get_all_users(database)
+    for user in users:
+        user.status = Status[user.status]
+        user.blood_type = Blood_type[user.blood_type]
+    return users
+
+@router.get('/user', tags=["user"], response_model=UserGetForm, dependencies=[Depends(JWTBearer())], name='curent_user:get')
+def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
+    user = crud.get_user_by_token(database, token)
+    #user_id = decodeJWT(token)['user_id']
+    #user = database.query(User).filter(User.id == user_id).one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
+    print(user.status)
+    user.status = Status[user.status].value
+    print(user.status)
+    user.blood_type = Blood_type[user.blood_type].value
+    return user
 
 @router.get('/user/{user_id}', tags=["user"], response_model=UserGetForm, name='user:get')
 def get_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer())):
@@ -91,27 +111,23 @@ def get_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer()))
     user.blood_type = Blood_type[user.blood_type]
     return user
 
-@router.get('/user', tags=["user"], response_model=UserGetForm, dependencies=[Depends(JWTBearer())], name='curent_user:get')
-def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
-    user = crud.get_user_by_token(database, token)
-    #user_id = decodeJWT(token)['user_id']
-    #user = database.query(User).filter(User.id == user_id).one_or_none()
+@router.delete('/user/{user_id}', tags=["user"], name='user:delete by id', status_code=200)
+def delete_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer())):
+    loged_user = crud.get_user_by_token(database, token)
+    if not loged_user.status == Status.A.name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
+    
+    user = crud.get_user_by_id(database, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
-    print(user.status)
-    user.status = Status[user.status].value
-    print(user.status)
-    user.blood_type = Blood_type[user.blood_type].value
-    return user
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such user")
+
+    return crud.delete_user_by_id(database, user_id)
+     
 
 
-@router.get('/users', tags=["user"], response_model=List[UserGetForm],dependencies=[Depends(JWTBearer())], name='user:get_all')#, dependencies=[Depends(JWTBearer())]
-def get_all_user(database=Depends(get_db)):
-    users = crud.get_all_users(database)
-    for user in users:
-        user.status = Status[user.status]
-        user.blood_type = Blood_type[user.blood_type]
-    return users
+
+
+
 
 
 # D  O  N  A  T  I  O  N  S
@@ -127,7 +143,7 @@ def get_all_donation(database=Depends(get_db)):
         don.blood_type = Blood_type[user.blood_type]
     return dons
 
-@router.post('/donations', tags=["donations"],dependencies=[Depends(JWTBearer())], name='donate:create') #dependencies=[Depends(JWTBearer())],
+@router.post('/donations', tags=["donations"], status_code=201, dependencies=[Depends(JWTBearer())], name='donate:create') #dependencies=[Depends(JWTBearer())],
 def create_donation(donate_form: DonationCreateForm = Body(...), database=Depends(get_db)):
     # btype = Blood_type[str(donate_form.blood_type)]
     record = database.query(Donations).filter(Donations.user_id == donate_form.user_id).order_by(Donations.date.desc()).first()
@@ -141,6 +157,7 @@ def create_donation(donate_form: DonationCreateForm = Body(...), database=Depend
     new_record = Donations(
         user_id=donate_form.user_id,
         volume=donate_form.volume,
+        clinic_id=donate_form.clinic_id
     )
     database.add(new_record)
     database.commit()
@@ -149,10 +166,43 @@ def create_donation(donate_form: DonationCreateForm = Body(...), database=Depend
     
     return {'created_record':new_record.date, 'user_id':new_record.user_id}
 
-@router.post('clinic',tags=['clinic'],dependencies=[Depends(JWTBearer())], name="clinic:create")
-def create_clinic(clinic_form: ClinicCreateForm = Body(...), database=Depends(get_db)):
-    clinic = database.query(Clinics).filter(Clinics.address == clinic_form.address).one_or_none
+
+# C L I N I C -------------------------------------------------------------------------------------------------
+@router.post('/clinic',tags=['clinic'], status_code=201, name="clinic:create")
+def create_clinic(clinic_form: ClinicCreateForm = Body(...), database=Depends(get_db), token=Depends(JWTBearer())):
+    loged_user = crud.get_user_by_token(database, token)
+    if not loged_user.status == Status.A.name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
+
+    clinic = database.query(Clinics).filter(Clinics.address == clinic_form.address).one_or_none()
     if clinic:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Address already registered")
     crud.create_clinic(database, clinic_form)
     return status.HTTP_201_CREATED
+
+@router.delete('/clinic/{cl_id}',tags=['clinic'],status_code=200, name="clinic:delete")
+def delete_clinic(cl_id:int, database=Depends(get_db), token=Depends(JWTBearer())):
+    loged_user = crud.get_user_by_token(database, token)
+    if not loged_user.status == Status.A.name:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
+
+    clinic = crud.get_clinic_by_id(database, cl_id)
+    if not clinic:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No clinics with such id")
+    crud.delete_clinic(database, cl_id)
+    return clinic
+
+@router.get('/clinics', tags=['clinic'], response_model=List[ClinicGetForm], name="clinic:get all")
+def get_all_clinic(database=Depends(get_db)):
+    clinics = database.query(Clinics).all()
+    if not clinics:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No clinics in DB")
+    return clinics
+
+
+@router.get('/clinic/{cl_id}', tags=['clinic'], response_model=ClinicGetForm, name="clinic:get by id")
+def get_clinic(cl_id:int, database=Depends(get_db)):
+    clinic = crud.get_clinic_by_id(database, cl_id)
+    if not clinic:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No clinics with such id")
+    return clinic

@@ -9,7 +9,7 @@ from .forms import UserCreateForm, UserUpdateForm, ClinicCreateForm
 from .utils import get_password_hash
 
 
-# USER CRUD
+# USER CRUD -------------------------------------------------------
 def create_user(database: Session, userform: UserCreateForm, adm_id):
     new_user = User(
         email=userform.email,
@@ -73,11 +73,12 @@ def update_user_volume(database: Session, don_volume: int, user_id: int):
 
 
 def delete_user_by_id(database: Session, user_id: int):
-    user_to_dell = database.query(User).filter(User.id == user_id)
+    user_to_dell = get_user_by_id(database, user_id)
     database.delete(user_to_dell)
     database.commit()
     return {'deleted user:': user_id}
 
+# C L I N I C --------------------------------------------
 def create_clinic(database: Session, cform:ClinicCreateForm):
     new_clinic = Clinics(
         address= cform.address,
@@ -88,3 +89,13 @@ def create_clinic(database: Session, cform:ClinicCreateForm):
     database.commit()
     database.refresh(new_clinic)
     return new_clinic
+
+def get_clinic_by_id(database: Session, id: int):
+    return database.query(Clinics).filter(Clinics.clinic_id == id).one_or_none()
+
+def delete_clinic(database: Session, id: int):
+    clinic = get_clinic_by_id(database, id)
+    database.delete(clinic)
+    database.commit()
+    return{'deleted_clinic': id}
+    
