@@ -90,9 +90,8 @@ def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
     #user = database.query(User).filter(User.id == user_id).one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
-    print(user.status)
+
     user.status = Status[user.status].value
-    print(user.status)
     user.blood_type = Blood_type[user.blood_type].value
     return user
 
@@ -137,15 +136,14 @@ def get_all_donation(database=Depends(get_db)):
     dons = database.query(Donations).order_by(Donations.date.desc()).all()
     if not dons:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
     for don in dons:
-        user = crud.get_user_by_id(database, don.user_id)
-        don.name = user.name
-        don.blood_type = Blood_type[user.blood_type]
+        don.user.blood_type = Blood_type[don.user.blood_type]
     return dons
 
 @router.post('/donations', tags=["donations"], status_code=201, dependencies=[Depends(JWTBearer())], name='donate:create') #dependencies=[Depends(JWTBearer())],
 def create_donation(donate_form: DonationCreateForm = Body(...), database=Depends(get_db)):
-    # btype = Blood_type[str(donate_form.blood_type)]
+    
     record = database.query(Donations).filter(Donations.user_id == donate_form.user_id).order_by(Donations.date.desc()).first()
     cur_date = datetime.now()
 
@@ -153,7 +151,10 @@ def create_donation(donate_form: DonationCreateForm = Body(...), database=Depend
         next_time = datetime(year=record.date.year + int(record.date.month / 12), month=(record.date.month+2)%12, day=record.date.day, hour=record.date.hour, minute=record.date.minute)
         if (next_time>cur_date):
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"Donor has donated resently. Donate_after {next_time}")
-
+    # CHECK ON INPUT DONATE_FORM DATA
+    if not crud.get_user_by_id(database, donate_form.user_id) or not crud.get_clinic_by_id(database, donate_form.clinic_id): 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Wrong Body')
+        
     new_record = Donations(
         user_id=donate_form.user_id,
         volume=donate_form.volume,

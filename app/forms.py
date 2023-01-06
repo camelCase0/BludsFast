@@ -15,6 +15,9 @@ class UserBase(BaseModel):
     name: str
     blood_type: Blood_type
 
+    class Config:
+        orm_mode = True
+
 class UserCreateForm(BaseModel):
     email: str
     password: str
@@ -74,8 +77,11 @@ class DonationCreateForm(BaseModel):
 class ClinicBase(BaseModel):
     clinic_id: int
     address: str
-    altitude: str
-    longitude: str
+    altitude: float
+    longitude: float
+
+    class Config:
+        orm_mode = True
 
 class DonationGetForm(BaseModel):
     record_id: int
@@ -84,7 +90,6 @@ class DonationGetForm(BaseModel):
     clinic: ClinicBase
     date: datetime
     
-
     class Config:
         orm_mode = True
 
@@ -104,6 +109,6 @@ class ClinicGetForm(ClinicBase):
 
 class ClinicCreateForm(BaseModel):
     address: str
-    altitude: str
-    longitude: str
+    altitude: float
+    longitude: float
 
