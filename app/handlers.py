@@ -18,14 +18,6 @@ Base.metadata.create_all(bind=engine)
 
 router = APIRouter()
 
-# @router.post("/posts", dependencies=[Depends(JWTBearer())], tags=["posts"])
-# def add_post(post: PostSchema):
-#     post.id = len(posts) + 1
-#     posts.append(post.dict())
-#     return {
-#         "data": "post added."
-#     }
-
 def get_db():
     db = SessionLocal()
     try:
@@ -37,9 +29,7 @@ def get_db():
 @router.post("/register", tags=["user"], name='user:create', status_code=201)#dependencies=[Depends(JWTBearer())],
 def create_user(userform: UserCreateForm = Body(...), database: Session = Depends(get_db), token=Depends(JWTBearer())):
     loged_user = crud.get_user_by_token(database, token)
-    #user_id = decodeJWT(token)['user_id']
-    #loged_user = database.query(User).filter(User.id == user_id).one_or_none()
-
+   
     if not loged_user.status == Status.A.name:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
 
@@ -48,17 +38,7 @@ def create_user(userform: UserCreateForm = Body(...), database: Session = Depend
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
 
     crud.create_user(database, userform, loged_user.id)
-    # new_user = User(
-    #     email=userform.email,
-    #     password=get_password_hash(userform.password),
-    #     name=userform.name,
-    #     blood_type=userform.blood_type.name,
-    #     status=userform.status.name
-    # )
-
-    # database.add(new_user)
-    # database.commit()
-
+    
     return status.HTTP_201_CREATED
 
 
@@ -86,8 +66,7 @@ def get_all_user(database=Depends(get_db)):
 @router.get('/user', tags=["user"], response_model=UserGetForm, dependencies=[Depends(JWTBearer())], name='curent_user:get')
 def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
     user = crud.get_user_by_token(database, token)
-    #user_id = decodeJWT(token)['user_id']
-    #user = database.query(User).filter(User.id == user_id).one_or_none()
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="No such user")
 
@@ -98,8 +77,7 @@ def get_curent_user(database=Depends(get_db), token=Depends(JWTBearer())):
 @router.get('/user/{user_id}', tags=["user"], response_model=UserGetForm, name='user:get')
 def get_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer())):
 
-    #user_id = decodeJWT(token)['user_id']
-    loged_user = crud.get_user_by_token(database, token) #database.query(User).filter(User.id == user_id).one_or_none()
+    loged_user = crud.get_user_by_token(database, token) 
     if not loged_user.status == Status.A.name:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin is permited!")
 
@@ -122,12 +100,6 @@ def delete_user(user_id: int, database=Depends(get_db), token=Depends(JWTBearer(
 
     return crud.delete_user_by_id(database, user_id)
      
-
-
-
-
-
-
 
 # D  O  N  A  T  I  O  N  S
 @router.get('/donations', tags=["donations"], response_model=List[DonationGetForm],dependencies=[Depends(JWTBearer())], name='donate:get all')# dependencies=[Depends(JWTBearer())],
