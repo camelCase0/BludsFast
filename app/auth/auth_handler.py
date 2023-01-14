@@ -6,10 +6,6 @@ import jwt
 # from decouple import config
 from app.config import SECRET_KEY, ALGORITHM
 
-# JWT_SECRET = config("secret")
-# JWT_ALGORITHM = config("algorithm")
-
-
 def token_response(token: str):
     return {
         "access_token": token
