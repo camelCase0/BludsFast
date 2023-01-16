@@ -5,4 +5,27 @@ services:
     #container_name: bluds_api
     command: uvicorn app.main:app --host=0.0.0.0
     ports:
-      - "8000:8000"
+      - "${WEB_PORT}:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: always
+    links:
+      - "db:database"
+    networks:
+      - stack
+  db:
+    image: postgres
+    container_name: ${POSTGRES_HOST}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - stack
+
+networks:
+  stack:
+    driver: bridge
