@@ -1,4 +1,4 @@
-#!/home/arkasha/BludsFast/venv/bin/python3
+#!/home/arkasha/BludsFast/venv/bin/python3.9
 # -*- coding: utf-8 -*-
 import re
 import sys
