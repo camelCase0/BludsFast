@@ -25,6 +25,9 @@ def get_db():
     finally:
         db.close()
 
+@router.get("/", tags=["temp"])
+def index():
+    return 200
 
 @router.post("/register", tags=["user"], name='user:create', status_code=201)#dependencies=[Depends(JWTBearer())],
 def create_user(userform: UserCreateForm = Body(...), database: Session = Depends(get_db), token=Depends(JWTBearer())):
